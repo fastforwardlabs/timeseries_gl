@@ -1,0 +1,22 @@
+* {
+  box-sizing: border-box;
+}
+html,
+body {
+  padding: 0;
+  margin: 0;
+  font-family: 'JetBrains Mono', 'Consolas', 'Andale Mono WT', 'Andale Mojo',
+    'Lucida Console', 'Lucida Sans Typewriter', 'DejaVu Sans Mono',
+    'Bitstream Vera Sans Mono', 'Liberation Mono', 'Nimbus Mono L', Monaco,
+    'Courier New', Courier, monospace;
+  font-size: 13.333px;
+  line-height: 16px;
+  -webkit-text-size-adjust: none;
+  /* cursor: none; */
+  user-select: none;
+}
+img,
+canvas {
+  display: block;
+  position: relative;
+}
