@@ -7,7 +7,7 @@ import {
   multiplyPoint,
   transformPoint,
   normalize,
-} from '/m/mat4.js'
+} from './mat4.js'
 
 export function initGL() {
   let { data } = state
