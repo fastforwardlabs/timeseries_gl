@@ -1,5 +1,5 @@
-import state from '/m/state.js'
-import { castRay, getWidth, getHeight } from '/m/gl.js'
+import state from './state.js'
+import { castRay, getWidth, getHeight } from './gl.js'
 
 export function setXY(x, y) {
   state.camera[0] = x

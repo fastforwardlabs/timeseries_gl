@@ -1,7 +1,7 @@
-import state from '/m/state.js'
-import { initGL } from '/m/gl.js'
-import { initKeyboard } from '/m/keyboard.js'
-import { initMouse } from '/m/mouse.js'
+import state from './state.js'
+import { initGL } from './gl.js'
+import { initKeyboard } from './keyboard.js'
+import { initMouse } from './mouse.js'
 
 window.addEventListener('load', () => {
   state.refs.$render = document.querySelector('#render')

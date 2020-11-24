@@ -1,4 +1,4 @@
-import state from '/m/state.js'
+import state from './state.js'
 import {
   perspective,
   lookAt,

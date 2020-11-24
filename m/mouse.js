@@ -1,6 +1,6 @@
-import state from '/m/state.js'
-import { getWidth, getHeight, castRay } from '/m/gl.js'
-import { setXY, directedZoom } from '/m/actions.js'
+import state from './state.js'
+import { getWidth, getHeight, castRay } from './gl.js'
+import { setXY, directedZoom } from './actions.js'
 
 function mouseDown(e) {
   state.mouse_down = true
