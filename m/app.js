@@ -6,7 +6,7 @@ import { initMouse } from './mouse.js'
 window.addEventListener('load', () => {
   state.refs.$render = document.querySelector('#render')
 
-  fetch('/daily_forecast.json')
+  fetch('daily_forecast.json')
     .then((r) => r.json())
     .then((data) => {
       state.data = Object.values(data).map((t) => {
