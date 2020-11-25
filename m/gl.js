@@ -9,6 +9,10 @@ import {
   normalize,
 } from './mat4.js'
 
+function numberWithCommas(x) {
+  return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+}
+
 export function initGL() {
   let { data } = state
   let { $render } = state.refs
@@ -228,12 +232,12 @@ export function initGL() {
     let y0 = -1
     let y1 = 1
     let vertices = [
-      [x0, y1],
-      [x1, y1],
       [x0, y0],
-      [x0, y0],
-      [x1, y1],
       [x1, y0],
+      [x0, y1],
+      [x0, y1],
+      [x1, y0],
+      [x1, y1],
     ]
     return {
       buffer: regl.buffer(vertices),
@@ -241,43 +245,6 @@ export function initGL() {
     }
   }
   let yTickPositions = yTickGeometry(regl)
-  let yTicks = regl({
-    frag: `
-      precision mediump float;
-      uniform vec4 color;
-      void main () {
-        gl_FragColor = color;
-      }`,
-    vert: `
-      precision highp float;
-      attribute vec2 position;
-      attribute float offset;
-      uniform mat4 view_projection;
-      uniform float x_pin;
-      uniform float scale;
-      void main() {
-        gl_Position = view_projection * vec4(position.x * scale + x_pin, position.y * scale * 0.1 + offset, 0, 1);
-      }`,
-    attributes: {
-      position: {
-        buffer: yTickPositions.buffer,
-        divisor: 0,
-      },
-      offset: {
-        buffer: regl.prop('offsets'),
-        divisor: 1,
-        offset: Float32Array.BYTES_PER_ELEMENT * 0,
-      },
-    },
-    uniforms: {
-      color: [0, 1, 0, 1],
-      view_projection: regl.prop('view_projection'),
-      x_pin: regl.prop('x_pin'),
-      scale: regl.prop('scale'),
-    },
-    count: yTickPositions.count,
-    instances: regl.prop('segments'),
-  })
   let yGraph = regl({
     frag: `
       precision mediump float;
@@ -371,8 +338,114 @@ export function initGL() {
   let x_tick_marks = [...Array(points.length)].map((_, i) => i)
   let x_tick_buffer = regl.buffer(x_tick_marks)
 
-  let y_tick_marks = [...Array(10 * 2 + 1)].map((_, i) => i / 4)
+  let y_tick_marks = [...Array(10 * 2 + 1)].map((_, i) => i / 2)
   let y_tick_buffer = regl.buffer(y_tick_marks)
+
+  let y_labels = y_tick_marks.map((v) => numberWithCommas(v * 100000))
+  let y_label_text_length = y_labels[y_labels.length - 1].length
+  let y_label_canvas = document.createElement('canvas')
+  {
+    y_label_canvas.width = y_label_text_length * 8
+    y_label_canvas.height = y_labels.length * 16
+    // y_label_canvas.height = 200
+    let cx = y_label_canvas.getContext('2d')
+    cx.font = '13.333px JetBrains Mono'
+    cx.textBaseline = 'middle'
+    cx.fillStyle = 'white'
+
+    cx.fillStyle = '#333'
+    cx.fillRect(0, 0, y_label_canvas.width, y_label_canvas.height)
+    cx.fillStyle = 'white'
+    for (let i = 0; i < y_labels.length; i++) {
+      let label = y_labels[i]
+      cx.fillText(label, 0, i * 16 + 8 + 1)
+    }
+
+    // cx.fillStyle = 'pink'
+    // cx.fillRect(0, 0, y_label_canvas.width, y_label_canvas.height)
+    // cx.fillStyle = 'green'
+    // cx.fillRect(0, 0, y_label_canvas.width / 2, y_label_canvas.height / 2)
+    // cx.fillStyle = 'orange'
+    // cx.fillRect(0, 0, y_label_canvas.width / 4, y_label_canvas.height)
+    // cx.fillStyle = 'red'
+    // cx.fillRect(
+    //   (y_label_canvas.width * 3) / 4,
+    //   0,
+    //   y_label_canvas.width / 4,
+    //   y_label_canvas.height
+    // )
+
+    // y_label_canvas.style.position = 'fixed'
+    // y_label_canvas.style.left = 0
+    // y_label_canvas.style.top = 0
+    // document.body.appendChild(y_label_canvas)
+  }
+
+  let y_tick_texture_line = 16 / y_label_canvas.height
+
+  let y_texture_offsets = regl.buffer(
+    y_tick_marks.map((_, i) => y_tick_texture_line * i)
+  )
+
+  // need to add texture coordinates
+  let yTicks = regl({
+    frag: `
+      precision mediump float;
+      varying vec2 vUv;
+      uniform sampler2D tex;
+      void main () {
+        gl_FragColor = texture2D(tex,vUv);
+      }`,
+    vert: `
+      precision highp float;
+      attribute vec2 position;
+      attribute float offset;
+      attribute float texture_offset;
+      attribute vec2 uv;
+      varying vec2 vUv;
+      uniform mat4 view_projection;
+      uniform float x_pin;
+      uniform vec2 scale;
+      void main() {
+        vUv = vec2(uv.x, uv.y + texture_offset);
+        gl_Position = view_projection * vec4(position.x * scale.x + x_pin, position.y * scale.y + offset, 0, 1);
+      }`,
+    attributes: {
+      position: {
+        buffer: yTickPositions.buffer,
+        divisor: 0,
+      },
+      uv: {
+        buffer: regl.buffer([
+          [-1, y_tick_texture_line],
+          [1, y_tick_texture_line],
+          [-1, 0],
+          [-1, 0],
+          [1, y_tick_texture_line],
+          [1, 0],
+        ]),
+        divisor: 0,
+      },
+      offset: {
+        buffer: regl.prop('offsets'),
+        divisor: 1,
+        offset: Float32Array.BYTES_PER_ELEMENT * 0,
+      },
+      texture_offset: {
+        buffer: regl.prop('texture_offsets'),
+        divisor: 1,
+        offset: Float32Array.BYTES_PER_ELEMENT * 0,
+      },
+    },
+    uniforms: {
+      view_projection: regl.prop('view_projection'),
+      x_pin: regl.prop('x_pin'),
+      scale: regl.prop('scale'),
+      tex: regl.texture(y_label_canvas),
+    },
+    count: yTickPositions.count,
+    instances: regl.prop('segments'),
+  })
 
   regl.frame(() => {
     regl.clear({
@@ -396,8 +469,13 @@ export function initGL() {
     let x_project = castRay([0, 0], 0)
     yTicks({
       offsets: x_tick_buffer,
+      texture_offsets: y_texture_offsets,
       view_projection: state.view_projection,
-      scale: 1 / (state.base_zoom / state.camera[2]),
+      scale: [
+        getWidth(y_label_canvas.width, state.base_zoom) /
+          (state.base_zoom / state.camera[2]),
+        -getHeight(8, state.base_zoom) / (state.base_zoom / state.camera[2]),
+      ],
       x_pin: zero_project[0],
       segments: y_tick_marks.length,
     })
